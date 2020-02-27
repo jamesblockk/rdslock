@@ -1,6 +1,7 @@
 package rdslock
 
 import (
+	"errors"
 	"time"
 
 	"github.com/go-redis/redis"
@@ -20,29 +21,26 @@ func InitURL(url string) {
 }
 
 // InitAssigned ...
-func InitAssigned(in *redis.Client) (err error) {
+func InitAssigned(in *redis.Client) {
 	_client = in
 	ping()
 }
 
 func ping() {
-	_, err = _client.Ping().Result()
-	if err != nil {
+	if _, err := _client.Ping().Result(); err != nil {
 		panic(err)
 	}
-
-	return nil
 }
 
 // Lock ...
-func Lock(key string, exp time.Second) (err error) {
+func Lock(key string, exp time.Duration) (err error) {
 	r := _client.SetNX(key, 1, exp)
 	ok, err := r.Result()
 	if err != nil {
 		return
 	}
 	if !ok {
-		err = error.Errors("lock failed")
+		err = errors.New("lock failed")
 	}
 
 	return
@@ -56,7 +54,7 @@ func UnLock(key string) (err error) {
 		return
 	}
 	if num == 0 {
-		err = error.Errors("unlock failed")
+		err = errors.New("unlock failed")
 	}
 
 	return
